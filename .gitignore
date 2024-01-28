@@ -1,3 +1,11 @@
+
+### Custome .gitignore
+
+/certs
+config.yaml
+
+### Python Default .gitignore
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
