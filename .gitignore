@@ -4,7 +4,7 @@
 /certs
 config.yaml
 
-### Python Default .gitignore
+### Github's Python Default .gitignore
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
