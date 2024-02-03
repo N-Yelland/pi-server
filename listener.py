@@ -4,7 +4,7 @@ import asyncio
 import ssl
 import hashlib
 import hmac
-import subprocess
+import git
 
 from aiohttp import web
 
@@ -48,8 +48,14 @@ async def run_server():
         request_body = await request.read()
         if verify_signature(request_body, SECRET, recieved_signature):
             print("Pulling repository...")
-            subprocess.Popen(["git", "pull"], stdout=subprocess.PIPE).stdout
-
+            repo = git.Repo("/home/nic/Desktop/pi-server")
+            
+            current = repo.head.commit
+            repo.remotes.origin.pull()
+            if current != repo.head.commit:
+                print("Repository contents have chagned.")
+            print("No change; repository already up-to-date.")
+            
 
     app.router.add_routes(routes)
 
