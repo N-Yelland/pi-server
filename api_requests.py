@@ -20,13 +20,13 @@ def get_public_ip() -> str:
     return response.json()["ip"]
 
 
-def cloudflare_api_request(type: str, command: str, **kwargs):
+def cloudflare_api_request(verb: str, command: str, **kwargs):
 
     zone_id = api_config.get("zone_id")
     url = CLOUDFLARE_REQUEST_FORMAT.format(zone=zone_id, cmd=command)
     
     response = requests.request(
-        type, url, headers={
+        verb, url, headers={
             "X-Auth-Key": api_config.get("key"),
             "X-Auth-Email": api_config.get("email")
         },
@@ -64,6 +64,7 @@ async def update_dns_record_ip_address(name: str, proxied: bool = True) -> None:
     IP address of this device.
 
     :param name: name of DNS record (string)
+    :param proxied: option to specify whether to have traffic proxied through Cloudflare.
     """
     print("Finding DNS record...")
     record = get_dns_record(name)
@@ -110,7 +111,7 @@ async def enter_development_mode():
     if response.status_code == 200:
         print("Successfully purged Cloudflare cache.")
     else:
-        print(f"Error while purging cloudlfare cache: response status code {response.status_code}")
+        print(f"Error while purging Cloudflare cache: response status code {response.status_code}")
     
     # Activate development mode
     print("Activating development mode...")
@@ -133,12 +134,12 @@ if __name__ == "__main__":
     response_time = int((t1 - t0) * 1000)
     print(f"Response: {ip} ({response_time} ms)")
 
-    name = "pi.nicyelland.com"
-    print(f"Getting DNS record for {name}")
+    hostname = "pi.nicyelland.com"
+    print(f"Getting DNS record for {hostname}")
     
     t0 = time.perf_counter()
-    dns_record = get_dns_record(name)
-    t1= time.perf_counter()
+    dns_record = get_dns_record(hostname)
+    t1 = time.perf_counter()
     
     response_time = int((t1 - t0) * 1000)
     print(f"Response: {dns_record} ({response_time} ms)")
@@ -146,8 +147,8 @@ if __name__ == "__main__":
     print("Updating IP address...")
 
     t0 = time.perf_counter()
-    asyncio.run(update_dns_record_ip_address(name))
-    t1= time.perf_counter()
+    asyncio.run(update_dns_record_ip_address(hostname))
+    t1 = time.perf_counter()
 
     response_time = int((t1 - t0) * 1000)
     print(f"({response_time} ms)")
@@ -156,8 +157,7 @@ if __name__ == "__main__":
 
     t0 = time.perf_counter()
     asyncio.run(enter_development_mode())
-    t1= time.perf_counter()
+    t1 = time.perf_counter()
 
     response_time = int((t1 - t0) * 1000)
     print(f"({response_time} ms)")
-

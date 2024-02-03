@@ -12,7 +12,7 @@ import os
 from server import run_server
 
 
-def get_args(args: Optional[Sequence[str]] = None):
+def get_args(arg_list: Optional[Sequence[str]] = None):
 
     parser = argparse.ArgumentParser(
         prog=os.path.basename(__file__),
@@ -31,18 +31,19 @@ def get_args(args: Optional[Sequence[str]] = None):
         "-p", "--port",
         action="store",
         default="12233",
-        help="port on which to run the server."
+        help="port on which to run the server"
     )
     parser.add_argument(
         "-u", "--update-ip",
         action="store_true",
         help="update Cloudflare DNS record with the current external IP, requested from ipify.com. Often necessary "
-             "after some downtime; can be indicated by 522 errors."
+             "after some downtime; can be indicated by 522 errors"
     )
 
-    return parser.parse_args(args)
+    return parser.parse_args(arg_list)
 
 
 if __name__ == "__main__":
 
     args = get_args()
+

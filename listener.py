@@ -22,7 +22,7 @@ logger.addHandler(handler)
 SECRET_TOKEN = open("secret_token", "r").read()
 
 
-def validate_signature(payload_body: str, secret_token: str, signature_header: str) -> bool:
+def validate_signature(payload_body: bytes, secret_token: str, signature_header: str) -> bool:
     """Function to validate whether a webhook payload has a valid signature. The signature should be the HMAC-SHA256
     digest of the payload body keyed with a secret token.
 
@@ -55,22 +55,21 @@ async def webhook_handler(request: web.Request) -> web.Response:
     """
     logger.info("Webhook triggered: verifying signature.")
         
-    recieved_signature = request.headers.get("X-Hub-Signature-256")
+    received_signature = request.headers.get("X-Hub-Signature-256")
     request_body = await request.read()
-    if validate_signature(request_body, SECRET_TOKEN, recieved_signature):
+    if validate_signature(request_body, SECRET_TOKEN, received_signature):
         logger.info("Validated signature, pulling repository...")
 
         repo = git.Repo("/home/nic/Desktop/pi-server")
         current = repo.head.commit
         repo.remotes.origin.pull()
         if current != repo.head.commit:
-            logger.info("Repository contents have chagned.")
+            logger.info("Repository contents have changed.")
         logger.info("No change; repository already up-to-date.")
 
         return web.Response(status=200)
     
     return web.Response(status=401)
-
 
 
 async def run_server() -> None:
