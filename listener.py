@@ -4,6 +4,7 @@ import asyncio
 import ssl
 import hashlib
 import hmac
+import subprocess
 
 from aiohttp import web
 
@@ -18,7 +19,7 @@ def verify_signature(payload_body: str, secret_token: str, signature_header: str
         return False
     
     hash_object = hmac.new(secret_token.encode("utf8"), msg=payload_body, digestmod=hashlib.sha256)
-    expected_signature = "sha256=" + hash_object.digest()
+    expected_signature = "sha256=" + hash_object.hexdigest()
     
     if not hmac.compare_digest(expected_signature, signature_header):
         print("Failed to validate signature.")
@@ -46,7 +47,9 @@ async def run_server():
         recieved_signature = request.headers.get("X-Hub-Signature-256")
         request_body = await request.read()
         if verify_signature(request_body, SECRET, recieved_signature):
-            pass
+            print("Pulling repository...")
+            subprocess.Popen("git pull", shell=True, stdout=subprocess.PIPE).communicate()
+
 
     app.router.add_routes(routes)
 
