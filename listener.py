@@ -15,7 +15,7 @@ logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setLevel(logging.INFO)
 
-formatter = logging.Formatter("[{asctime}] {name} :: {levelname:<6} :: {message}", style="{")
+formatter = logging.Formatter("[{asctime}] {name} :: {levelname:>8} :: {message}", style="{")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
