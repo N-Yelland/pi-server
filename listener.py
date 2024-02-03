@@ -48,7 +48,7 @@ async def run_server():
         request_body = await request.read()
         if verify_signature(request_body, SECRET, recieved_signature):
             print("Pulling repository...")
-            subprocess.Popen("git pull", shell=True, stdout=subprocess.PIPE).communicate()
+            subprocess.Popen(["git", "pull"], stdout=subprocess.PIPE).stdout
 
 
     app.router.add_routes(routes)
