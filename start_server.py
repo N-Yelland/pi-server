@@ -6,10 +6,15 @@ Starts a TCP website running on a specified port.
 
 from typing import Optional, Sequence
 
+import asyncio
 import argparse
 import os
 
+from api_requests import update_dns_record_ip_address, enter_development_mode
 from server import run_server
+
+HOSTNAME = "pi.nicyelland.com"
+DEFAULT_PORT = 12233
 
 
 def get_args(arg_list: Optional[Sequence[str]] = None):
@@ -30,7 +35,8 @@ def get_args(arg_list: Optional[Sequence[str]] = None):
     parser.add_argument(
         "-p", "--port",
         action="store",
-        default="12233",
+        type=int,
+        default=DEFAULT_PORT,
         help="port on which to run the server"
     )
     parser.add_argument(
@@ -43,7 +49,19 @@ def get_args(arg_list: Optional[Sequence[str]] = None):
     return parser.parse_args(arg_list)
 
 
-if __name__ == "__main__":
-
+async def main():
     args = get_args()
 
+    if args.dev_mode:
+        print("Entering development mode...")
+        await enter_development_mode()
+
+    if args.update_ip:
+        print("Updating IP address...")
+        await update_dns_record_ip_address(HOSTNAME)
+
+    await run_server(args.port)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

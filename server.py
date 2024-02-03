@@ -13,7 +13,7 @@ def html_response(path):
     return resp
 
 
-async def run_server():
+async def run_server(port):
     sio = socketio.AsyncServer(namespaces="*", async_mode="aiohttp")
     app = web.Application()
     sio.attach(app)
@@ -53,7 +53,7 @@ async def run_server():
     await runner.setup()
     site = web.TCPSite(
         runner=runner,
-        port=12233,
+        port=port,
         ssl_context=ssl_context
     )
     await site.start()

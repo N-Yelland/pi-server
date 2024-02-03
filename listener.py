@@ -65,7 +65,8 @@ async def webhook_handler(request: web.Request) -> web.Response:
         repo.remotes.origin.pull()
         if current != repo.head.commit:
             logger.info("Repository contents have changed.")
-        logger.info("No change; repository already up-to-date.")
+        else:
+            logger.info("No change; repository already up-to-date.")
 
         return web.Response(status=200)
     
