@@ -4,6 +4,8 @@
 /certs
 config.yaml
 secret_token
+*.log
+*.service
 
 ### Github's Python Default .gitignore
 
