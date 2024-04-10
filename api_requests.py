@@ -6,7 +6,7 @@ import asyncio
 IP_REQUEST_URL = "https://api.ipify.org/?format=json"
 CLOUDFLARE_REQUEST_FORMAT = "https://api.cloudflare.com/client/v4/zones/{zone}/{cmd}"
 
-with open("config.yaml", "r") as config_file:
+with open("/home/nic/Desktop/pi-server/config.yaml", "r") as config_file:
     config = yaml.safe_load(config_file)
 api_config = config.get("cloudflare_api")
 

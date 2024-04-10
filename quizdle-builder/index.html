@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Quizdle Builder</title>
+
+        <!-- External Scripts -->
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+        <script src="https://cdn.socket.io/4.5.0/socket.io.min.js" integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k" crossorigin="anonymous"></script>
+         
+        <!-- Internal Scripts -->
+        <script type="text/javascript" src="quizdle-builder/main.js"></script>
+         
+        <!-- CSS -->
+        <link rel="stylesheet" href="quizdle-builder/style.css">
+ 
+    </head>
+    <body>
+        <h1>Quizdle Builder</h1>
+
+        This is a test page.
+
+        <br></br>
+
+        <div class="grid-container">
+            <div class="clues">
+                <div class="clue">
+                    <textarea class="question" placeholder="Write question here..." disabled="true"></textarea>
+                    <input type=text class="answer" placeholder="Write answer here..."></textarea>
+                </div>
+
+                <div class="clue">
+                    <textarea class="question" placeholder="Write question here..." disabled="true"></textarea>
+                    <input type=text class="answer" placeholder="Write answer here..."></textarea>
+                </div>
+
+                <div class="clue">
+                    <textarea class="question" placeholder="Write question here..." disabled="true"></textarea>
+                    <input type=text class="answer" placeholder="Write answer here..."></textarea>
+                </div>
+
+                <div class="clue">
+                    <textarea class="question" placeholder="Write question here..." disabled="true"></textarea>
+                    <input type=text class="answer" placeholder="Write answer here..."></textarea>
+                </div>
+
+                <div class="clue">
+                    <textarea class="question" placeholder="Write question here..." disabled="true"></textarea>
+                    <input type=text class="answer" placeholder="Write answer here..."></textarea>
+                </div>
+
+            </div>
+
+            <div class="arrows"><button class="send-grid-btn" type="button">Send to Grid ▶</button></div>
+
+            <div class="grid"></div>
+
+            <div class="tmp-display"><i>HyGraph-formatted coordinates will appear here...</i></div>
+        </div>
+    </body>
+
+    <!-- Scripts -->
+    <script type="text/javascript" src="quizdle-builder/grid.js"></script>
+
+</html>

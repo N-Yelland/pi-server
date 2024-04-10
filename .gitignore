@@ -2,6 +2,7 @@
 ### Custome .gitignore
 
 /certs
+/private
 config.yaml
 secret_token
 *.log
