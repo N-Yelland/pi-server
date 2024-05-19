@@ -3,62 +3,171 @@
     <head>
         <title>Quizdle Builder</title>
 
+
         <!-- External Scripts -->
         <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
         <script src="https://cdn.socket.io/4.5.0/socket.io.min.js" integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k" crossorigin="anonymous"></script>
          
         <!-- Internal Scripts -->
-        <script type="text/javascript" src="quizdle-builder/main.js"></script>
+        <script type="text/javascript" src="../quizdle-builder/requests.js"></script>
          
         <!-- CSS -->
-        <link rel="stylesheet" href="quizdle-builder/style.css">
+        <link rel="stylesheet" href="../quizdle-builder/style.css">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0"/>
+
  
     </head>
     <body>
-        <h1>Quizdle Builder</h1>
 
-        This is a test page.
+        <div id="navbar">
+            <div class="title">QUIZDLE<div class="title-addon">/builder (beta)</div></div>
+        </div>
+        
+        <div class="boxes">
 
-        <br></br>
+            <div class="stepbox">
+                <div class="box-title">
+                    Step 1: Questions &amp; Answers
+                </div>
+                <div class="box-content">
+                    <div class="clue">
+                        <textarea id="clue1" class="question" placeholder="Write question here..." oninput='this.style.height = "";this.style.height = this.scrollHeight + "px"'></textarea>
+                        <input id="answer1" type="text" class="answer" placeholder="Write answer here..." oninput='this.style.width = "";this.style.width = this.scrollWidth + "px"'></input>
+                    </div>
+    
+                    <div class="clue">
+                        <textarea id="clue2" class="question" placeholder="Write question here..."></textarea>
+                        <input id="answer2" type=text class="answer" placeholder="Write answer here..."></textarea>
+                    </div>
+    
+                    <div class="clue">
+                        <textarea id="clue3" class="question" placeholder="Write question here..."></textarea>
+                        <input id="answer3" type=text class="answer" placeholder="Write answer here..."></textarea>
+                    </div>
+    
+                    <div class="clue">
+                        <textarea id="clue4" class="question" placeholder="Write question here..."></textarea>
+                        <input id="answer4" type=text class="answer" placeholder="Write answer here..."></textarea>
+                    </div>
+    
+                    <div class="clue">
+                        <textarea id="clue5" class="question" placeholder="Write question here..."></textarea>
+                        <input id="answer5" type=text class="answer" placeholder="Write answer here..."></textarea>
+                    </div>
+                </div>
+            </div>
 
-        <div class="grid-container">
-            <div class="clues">
-                <div class="clue">
-                    <textarea class="question" placeholder="Write question here..." disabled="true"></textarea>
-                    <input type=text class="answer" placeholder="Write answer here..."></textarea>
+            <div class="stepbox">
+                <div class="box-title">
+                    Step 2: Build Grid
+                </div>
+                <div class="box-content">
+                    <div class="grid">
+                        <div class="build-btn button big-btn" >
+                            <span id="build-icon" class="material-symbols-outlined">
+                                construction
+                            </span>
+                        </div>
+                        <div class="error-msg">
+                            <div class="box-title">ERROR</div>
+                            <div class="text">Content of the message goes here.</div>
+                        </div>
+                    </div>
+                    <div class="buttons">
+                        <div id="rebuild-btn" class="button small-btn inactive">
+                            Rebuild
+                        </div>
+
+                        <div id="prev-btn" class="button small-btn inactive">&#9664;</div>
+                        <div id="next-btn" class="button small-btn inactive">&#9654;</div>
+                    </div>
+                    <div class="clue-info"></div>
+                </div>
+            </div>
+
+            <div class="stepbox">
+                <div class="box-title">
+                    Step 3: Upload to CMS - <i>Coming Soon!</i>
+                </div>
+                <div class="box-content">
+                    
+                    <div class="label">Author: <i>(leave blank to stay anonymous!)</i></div>
+                    <textarea id="author" class="question" placeholder="Write name/handle here..."></textarea>
+
+                    <div class="label">Description: <i>(optional)</i></div>
+                    <textarea id="quizDescription" class="question" placeholder="Enter description here..."></textarea>
+                    
+                    <div class="label">Select Date:</div>
+                    <div id="calendar"></div>
+
+                    <br>
+
+                    <div class="buttons centered">
+                        <div id="upload-btn" class="button small-btn inactive">Upload</div>
+                    </div>
+                </div>
+            </div>
+    
+        </div>
+
+        <div id="pop-up">
+            <div id="pop-up-box-container">
+                <div id="upload-confirmation" class="pop-up-box">
+                    <div class="box-title">
+                        Upload Confirmation
+                    </div>
+
+                    <form action="javascript:upload_current_quizdle();">
+                        <label for="password">Enter Password:</label><br>
+                        <input type="password" id="password" name="password" class=""><br>
+                        <div class="buttons centered">
+                            <input type="submit" value="Upload" class="button small-btn">
+                        </div>
+                        
+                    </form>
+
+                    <div class="close-btn">
+                        <span id="close-icon" class="material-symbols-outlined">
+                            close
+                        </span>
+                    </div>
                 </div>
 
-                <div class="clue">
-                    <textarea class="question" placeholder="Write question here..." disabled="true"></textarea>
-                    <input type=text class="answer" placeholder="Write answer here..."></textarea>
-                </div>
+                <div id="alert" class="pop-up-box">
+                    <div class="box-title">
+                        Response
+                    </div>
 
-                <div class="clue">
-                    <textarea class="question" placeholder="Write question here..." disabled="true"></textarea>
-                    <input type=text class="answer" placeholder="Write answer here..."></textarea>
-                </div>
+                    <div id="alert-msg"></div>
 
-                <div class="clue">
-                    <textarea class="question" placeholder="Write question here..." disabled="true"></textarea>
-                    <input type=text class="answer" placeholder="Write answer here..."></textarea>
-                </div>
-
-                <div class="clue">
-                    <textarea class="question" placeholder="Write question here..." disabled="true"></textarea>
-                    <input type=text class="answer" placeholder="Write answer here..."></textarea>
+                    <div class="close-btn">
+                        <span id="close-icon" class="material-symbols-outlined">
+                            close
+                        </span>
+                    </div>
                 </div>
 
             </div>
-
-            <div class="arrows"><button class="send-grid-btn" type="button">Send to Grid ▶</button></div>
-
-            <div class="grid"></div>
-
-            <div class="tmp-display"><i>HyGraph-formatted coordinates will appear here...</i></div>
         </div>
+
     </body>
 
-    <!-- Scripts -->
-    <script type="text/javascript" src="quizdle-builder/grid.js"></script>
+    <script type="text/javascript" src="../quizdle-builder/grid.js"></script>
+    <script type="text/javascript">
+        // Make question and answer fields persistent:
+        $(document).on("ready", function () {
+            $(".question, .answer").each(function (index) {
+                let name = $(this).attr("class") + index.toString();
+                $(this).val(localStorage.getItem(name));
+
+                $(this).on("input", function () {
+                    localStorage.setItem(name, $(this).val())
+                });
+            });
+        });
+
+    </script>
+
+
 
 </html>

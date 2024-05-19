@@ -1,66 +1,156 @@
 
+$(".build-btn").on("click", async function () {
+    console.log("Starting grid-building process...");
+    
+    // Tidy up possible interruptions...
+    $(this).removeClass("spin");
+    $(".error-msg").fadeOut();
 
-function get_pos(cell) {
-    let x = cell.index();
-    let y = cell.parent().index();
-    return {x: x, y: y};
-}
-
-function select_cell(pos){
-    let row = $(".grid").children()[pos.y];
-    let cell = $(row).children()[pos.x];
-    $(cell).click();
-    return $(cell);
-}
-
-function read_cell(pos) {
-    let row = $(".grid").children()[pos.y];
-    let cell = $(row).children()[pos.x];
-    return $(cell).html();
-}
-
-function parse_grid() {
-    let row_words = new Array();
-    let col_words = new Array();
-
-    let rows = $(".grid").children().toArray();
-    for (let i = 0; i < rows.length; i++) {
-        row_words.push('');
-        let cells = $(rows[i]).children().toArray();
-        for (let j = 0; j < cells.length; j ++) {
-            if (i == 0) col_words.push('');
-            let cell_contents = $(cells[j]).html() || " ";
-            row_words[i] += cell_contents;
-            col_words[j] += cell_contents;
+    let words = [];
+    $(".answer").each(function () {
+        let answer = $(this).val();
+        if (answer) {
+            words.push(answer);
+        } else {
+            // flash empty answers
+            $(this).addClass("flash");
+            let element = $(this);
+            setTimeout(function() {element.removeClass("flash")}, 1000);
         }
+    });
+
+    if (words.length < 5) {
+        console.log("You must provide all the answers!");
+        return;
     }
 
-    let words = new Array();
+    $(this).addClass("spin");
 
-    // extract words from rows...
-    row_words.forEach((string, index) => {
-        let matches = [...string.matchAll(/\w{2,}/g)]
-        for (const match of matches) {
-            words.push({
-                word: match[0],
-                pos: `${index},${match.index},A`
-            });
-        }
-    });
+    const data = await get_crossword_grids(words);
 
-    // extract words from columns...
-    col_words.forEach((string, index) => {
-        let matches = [...string.matchAll(/\w{2,}/g)]
-        for (const match of matches) {
-            words.push({
-                word: match[0],
-                pos: `${match.index},${index},D`
-            });
-        }
-    });
+    console.log("Recieved data: ", data);
 
-    return words;
+    // An error has returned instead of grid data; we should report it.
+    var error;
+    if (typeof data == "string") {
+        error = data;
+    } else if (data.errors) {
+        error = data.errors.join(", ");
+    }
+
+    if (error) {
+        console.log("there was an error...");
+        $(this).removeClass("spin");
+
+        $(".error-msg .text").html(error);
+        $(".error-msg").fadeIn(500);
+        setTimeout(function () {
+            $(".error-msg").fadeOut();
+        }, 5000);
+        
+        return;
+    }
+
+    // TODO: handle the presence of warnings
+
+    // display grids; just the first one for now
+
+    localStorage["grids"] = JSON.stringify(data.grids);
+    localStorage["grid_index"] = 0;
+
+    const grid = data.grids[0];
+
+    display_grid(grid);
+
+    // Activate the other buttons
+    $("#rebuild-btn").removeClass("inactive");
+    $("#next-btn").toggleClass("inactive", data.grids.length == 1)
+
+});
+
+
+function display_grid (grid) {
+    const n = grid.grid_size;
+
+    // Build an n x n grid
+    create_grid(n);
+
+    $(".build-btn").removeClass("spin");
+    $(".build-btn").hide();
+
+    // ... and fill it with the right words.
+
+    write_words_to_grid(grid.clues);
+    /*
+    for (clue of grid.clues) {
+        $(".clue-info").append(`${clue.word}\t${clue.row},${clue.col},${clue.direction}<br>`);
+    }
+    */
 }
+
+
+function rebuild_grid (increment=null) {
+    // Removes grid...
+    $(".grid .row").remove();
+    $(".clue-info").empty();
+
+    if (!increment) {
+        // Case 1: Full rebuild
+        // Displays big button again...
+        $(".big-btn").show();
+
+        // ...and click it!
+        $(".big-btn").click();
+    } else {
+        // Case 2: build another pre-computed grid...
+        const grids = JSON.parse(localStorage["grids"]);
+        const x = parseInt(localStorage["grid_index"]) + (increment == "next" ? 1 : -1);
+        const grid = grids[x];
+        const num_grids = grids.length;
+
+        display_grid(grid);
+        
+        // Update index
+        localStorage["grid_index"] = x;
+
+        return {
+            "new_index": x,
+            "num_grids": num_grids
+        };
+    }
+}
+
+$("#prev-btn").on("click", function () {
+    const grid_info = rebuild_grid("prev");
+    $("#prev-btn").toggleClass("inactive", grid_info.new_index == 0);
+    $("#next-btn").toggleClass("inactive", grid_info.new_index == grid_info.num_grids - 1);
+});
+
+$("#next-btn").on("click", function () {
+    const grid_info = rebuild_grid("next");
+    $("#prev-btn").toggleClass("inactive", grid_info.new_index == 0);
+    $("#next-btn").toggleClass("inactive", grid_info.new_index == grid_info.num_grids - 1);
+});
+
+$("#rebuild-btn").on("click", function () {
+    $(".buttons .button").addClass("inactive");
+    rebuild_grid();
+})
+
+
+function create_grid(n) {
+
+    for (let i = 0; i < n; i++) {
+        var row = $("<div></div>").appendTo(".grid");
+        row.addClass("row");
+        
+        for (let j = 0; j < n; j++) {
+            var cell = $("<div></div>").appendTo(row);
+            cell.addClass("cell");
+        }
+    }
+}
+
 
 function write_char_to_grid(char, row, col) {
     let cell = $(".grid").children(".row").eq(row).children(".cell").eq(col);
@@ -69,6 +159,7 @@ function write_char_to_grid(char, row, col) {
     }
     cell.html(char);
 }
+
 
 function write_words_to_grid(words) {
     // 'words' is a JSON object with schema [{word: str, row: int, col: int, direction: str}, ...]
@@ -83,153 +174,76 @@ function write_words_to_grid(words) {
     }
 }
 
-function display_clues(clue_data) {
+$(document).on("ready", function () {
+    const grids = JSON.parse(localStorage.getItem("grids"));
+    const x = parseInt(localStorage.getItem("grid_index"))
 
-    $(".clue").remove()
-
-    for (const clue of clue_data) {
-        var clue_div = $("<div></div>").appendTo(".clues");
-        clue_div.addClass("clue");
-        clue_div.html(`${clue.word} - ${clue.pos}`);
+    // we assume grids being set implies x is set.
+    if (grids) {
+        display_grid(grids[x])
+        $("#prev-btn").toggleClass("inactive", x == 0);
+        $("#next-btn").toggleClass("inactive", x == grids.length);
+        $("#rebuild-btn").removeClass("inactive");
     }
+})
+
+
+// Calendar things
+
+const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"]
+const days = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+
+const today = new Date();
+const week = [];
+
+for (let i = 0; i < 7; i++) {
+    let day = new Date();
+    day.setDate(day.getDate() + i);
+    week.push(day);
 }
 
-$(document).on("ready", function () {
+for (let day of week) {
+    let day_blob = $("<div></div>").appendTo("#calendar");
+    day_blob.addClass("day-blob button");
 
-    let direction = "across"
+    day_blob.html(`
+        <div class="date-text small">${days[day.getDay()]}</div>
+        <div class="date-text big">${day.getDate().toString()}</div>
+        <div class="date-text small">${months[day.getMonth()]}</div>`);
+    
+    day_blob.attr("id", day.toISOString().substring(0,10))
+}
 
-    $(".grid .cell").on("click", function () {
-        if ($(this).hasClass("selected")) {
-            direction = (direction == "across") ? "down" : "across";
-        }
-        $(".cell").removeClass("selected");
+$(document).on("ready", async function () {
+
+    $(".day-blob").on("click", function () {
+        $("#upload-btn").removeClass("inactive");
+        $(".day-blob").removeClass("selected");
         $(this).addClass("selected");
-        if (direction == "down") {
-            $(this).addClass("down");
-        } else {
-            $(this).removeClass("down");
-        }
-        $(this).focus();
-    });
-
-    $(document).on("click", function (e) {
-        if (!$(e.target).parents(".grid").length) {
-            $(".cell.selected").removeClass("selected");
-        }
-    });
-
-    $(document).on("keydown", function(e) {
-
-        if (!$(".cell.selected").length) {
-            return;
-        }
-
-        let text_changed = false;
-
-        if (e.key.match(/^[a-z]$/i)) {
-            let current_cell = $(".cell.selected");
-            current_cell.html(e.key.toUpperCase());
-            text_changed = true;
-            let pos = get_pos(current_cell);
-            
-            (direction == "across") ? pos.x++ : pos.y++;
-            select_cell(pos);
-        }
-
-        else if (e.key == "Backspace") {
-            let current_cell = $(".cell.selected");
-            if (current_cell.html()) { current_cell.html(""); }
-            else {
-                let pos = get_pos(current_cell);
-                (direction == "across") ? pos.x-- : pos.y--;;
-                let new_cell = select_cell(pos);
-                new_cell.html("");
-                text_changed = true;
-            }
-        }
-
-        // Use arrow keys to move cursor
-        else if (e.key.match(/^Arrow/)) {
-            let current_cell = $(".cell.selected");
-            let pos = get_pos(current_cell);
-            switch (e.key) {
-                case "ArrowUp": pos.y --; break;
-                case "ArrowDown": pos.y ++; break;
-                case "ArrowLeft": pos.x --; break;
-                case "ArrowRight": pos.x ++; break;
-            }
-            select_cell(pos);
-        }
-
-        // Press [space] to change direction
-        else if (e.key == " ") {
-            e.preventDefault();
-            let current_cell = $(".cell.selected");
-            let pos = get_pos(current_cell);
-            select_cell(pos);
-        }
-
-        else if (e.key == "Delete") {
-            let current_cell = $(".cell.selected");
-            current_cell.html("");
-            text_changed = true;
-        }
-
-        else {
-            console.log(e.key);
-        }
-
-        // Update the clues...
-        if (text_changed) {
-            clue_data = parse_grid();
-            // display_clues(clue_data);
-        }
-
-    });
-
-    $(".answer").on("input", function() {
-        this.value = this.value.toUpperCase();
     })
 
-    $(".send-grid-btn").on("click", function() {
-        let words = [];
-        $(".answer").each(function () {
-            if ($(this).val()) {
-                words.push($(this).val());
-            }
-        });
-        console.log("Sending request to generate grid for " + words);
-        $.ajax({
-            url: "https://pi.nicyelland.com/quizdle-builder/generate",
-            data: {
-                words: words.join(","),
-                json: "true"
-            },
-            success: function(response) {
-                console.log(response);
-                
-                if (response.grids.length > 0) {
-                    $(".cell").html("");
-                    write_words_to_grid(response.grids[0]);
+    const next_weeks_quizdles_status = await get_next_weeks_quizdles_status();
+    
+    for (let date of next_weeks_quizdles_status) {
+        $(`#${date}`).addClass("done");
+    }
 
-                    $(".tmp-display").html("")
-                    for (const clue of response.grids[0]) {
-                        $(".tmp-display").append(`${clue.word}\t${clue.row},${clue.col},${clue.direction}<br>`);
-                    }
-                }
+})
 
-                if (response.errors) {
-                    $(".tmp-display").append("<br>");
-                    for (const e of response.errors) {
-                        $(".tmp-display").append(e + "<br>");
-                    }
-                }
-                
-                if (typeof response == "string") {
-                    alert(response);
-                }
-            }  
-        });
-    });
-});
+$("#upload-btn").on("click", function () {
+    $(".pop-up-box").hide();
+    $("#upload-confirmation").show();
+    
+    $("#pop-up").fadeIn();
+})
 
+$(".close-btn").on("click", function () {
+    $("#pop-up").fadeOut();
+})
+
+function show_alert(msg) {
+    $(".pop-up-box").hide();
+    $("#alert").show();
+    $("#alert #alert-msg").html(msg);
+}
+// TODO: add "Clear All" button

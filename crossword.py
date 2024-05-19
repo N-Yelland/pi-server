@@ -147,13 +147,14 @@ class Crossword:
             a_word, d_word = w2, w1
         return a_word[d_word.x - a_word.x] == d_word[a_word.y - d_word.y]
 
-    def align(self) -> None:
+    def align(self, x: int = 0, y: int =0) -> None:
         """
-        Shifts positions of words so that the top-left corner of the bounding box is aligned with (0,0).
+        Shifts positions of words so that the top-left corner of the bounding box is aligned with (x, y).
+        (Defaults to (0,0))
         :return: None
         """
-        x_shift = min(w.x for w in self.words)
-        y_shift = min(w.y for w in self.words)
+        x_shift = min(w.x for w in self.words) - x
+        y_shift = min(w.y for w in self.words) - y
         self.words = [w.shifted(-x_shift, -y_shift) for w in self.words]
 
     def get_bounding_box(self) -> Tuple[int, int]:
@@ -220,6 +221,21 @@ class Crossword:
                 "direction": word.direction
             })
         return output
+    
+    def centre(self) -> None:
+        """
+        Centres the grid in its own "bounding square".
+        """
+        w, h = self.get_bounding_box()
+        adjustment = int(abs(w-h)/2)
+        if w > h:
+            self.align(0, adjustment)
+        else:
+            self.align(adjustment, 0)
+    
+    def get_aspect_ratio(self) -> float:
+        w, h = self.get_bounding_box()
+        return max(w, h) / min(w, h)
 
     def __eq__(self, other):
         return self.words == other.words
@@ -273,7 +289,7 @@ def generate_crosswords(words_to_add: List[str],
     *The recursive nature of the definition with no look-ahead means that certain structures (e.g. 'pinwheels' where a
     2x2 section of the grid is contained in four words overlapping) would require invalid grids at intermediate stages.
 
-    # TODO: add levels of 'strictness' that allow e.g. pinwheels or even no adjacent and parallel clues.
+    TODO: add levels of 'strictness' that allow e.g. pinwheels or even no adjacent and parallel clues.
 
     :param words_to_add:
     :param crossword:
@@ -312,11 +328,12 @@ def generate_crosswords(words_to_add: List[str],
 
 ITERATION_LIMIT = 10000
 TIME_LIMIT = 10
+MAX_GRIDS_RETURNED = 20
 
 def main(wordlist: List[str], json: bool) -> str:
     os.nice(10)
     output = []
-    json_data = {"errors": [], "grids": []}
+    json_data = {"errors": [], "warnings": [], "grids": []}
 
     crosswords: Set[Crossword] = set()
     i = 0
@@ -324,7 +341,7 @@ def main(wordlist: List[str], json: bool) -> str:
         i += 1
         if i > ITERATION_LIMIT:
             output.append("Warning! Iteration limit reached!")
-            json_data["errors"].append("iteration_limit_reached")
+            json_data["warnings"].append("iteration_limit_reached")
             break
         if xw not in crosswords:
             crosswords.add(xw)
@@ -337,17 +354,24 @@ def main(wordlist: List[str], json: bool) -> str:
         json_data["errors"].append("no_grids_found")
 
     else:
-        max_crossings = max(xw.count_crossings() for xw in crosswords)
 
+        # Maximise number of crossings, then minimise size, and minimise aspect ratio...
+        crosswords = sorted(crosswords,
+                            key=lambda xw: (-xw.count_crossings(), xw.get_size(), xw.get_aspect_ratio()))
+        
         output.append("Best grid(s):")
-        best_grids = [xw for xw in crosswords if xw.count_crossings() == max_crossings]
-        min_size = min(xw.get_size() for xw in best_grids)
+        best_grids = crosswords[:MAX_GRIDS_RETURNED]
         for xw in best_grids:
-            if xw.get_size() == min_size:
-                output.append(xw.display_string())
-                output.append(xw.list_clues_string())
-                output.append("")
-                json_data["grids"].append(xw.list_clues())
+            output.append(xw.display_string())
+            output.append(xw.list_clues_string())
+            output.append("")
+
+            xw.centre()
+
+            json_data["grids"].append({
+                "clues": xw.list_clues(),
+                "grid_size": max(xw.get_bounding_box())
+            })
 
     if json:
         return json_data
@@ -357,13 +381,16 @@ def main(wordlist: List[str], json: bool) -> str:
 class BadRequest(Exception):
     """Exception to raise when there are problems with an HTTP request."""
 
+MAX_WORDS = 5
+MAX_WORD_LENGTH = 20
+
 @timeout(TIME_LIMIT, timeout_exception=TimeoutError)
 def process_generate_request(wordlist: List[str], json=False) -> str:
-    if len(wordlist) > 5:
-        raise BadRequest("Too many words! (maximum of 5)")
+    if len(wordlist) > MAX_WORDS:
+        raise BadRequest(f"Too many words! (maximum of {MAX_WORDS})")
     
-    if any(len(word) > 15 for word in wordlist):
-        raise BadRequest("Words too long! (max length 15)")
+    if any(len(word) > MAX_WORD_LENGTH for word in wordlist):
+        raise BadRequest(f"Words too long! (max length {MAX_WORD_LENGTH})")
         
     return main(wordlist, json)
 

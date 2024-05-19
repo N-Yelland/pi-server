@@ -8,8 +8,12 @@ import traceback
 from aiohttp import web
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
+from datetime import date
+from hashlib import sha3_512
 
+from authentication import authetnicate, AuthenticationError
 from crossword import process_generate_request, BadRequest
+from hygraph_api import get_quizdle_by_date, perform_query
 
 pool = ProcessPoolExecutor(3)
 
@@ -52,17 +56,49 @@ async def run_server(port):
 
             loop = asyncio.get_running_loop()
             data = await loop.run_in_executor(pool, partial(process_generate_request, json=return_json), words)
+
+            print("Returning crossword to client.")
             return web.json_response(data)
         
         except TimeoutError:
+            print("Crossword generation timed out.")
             return web.Response(text=f"Request timed out! Try using words with fewer letters in common!\n")
         
         except BadRequest as e:
+            print(f"Error: {e}")
             return web.Response(text=f"Error: {e}\n")
         
         except Exception as e:
-            return web.Response(text=f"Unhandled Error ({type(e).__name__}): " + \
-                                f"{e}\n{''.join(traceback.format_tb(e.__traceback__))}\n")
+            error_msg = f"Unhandled Error ({type(e).__name__}): {e}\n{''.join(traceback.format_tb(e.__traceback__))}"
+            return web.Response(text=error_msg+"\n")
+    
+    @routes.post("/quizdle-builder/read")
+    async def post_handler(request: web.Request):
+        payload = await request.post()
+        password = payload.get("password")
+        print("New read request")
+
+        try:
+            authetnicate(password, "private/quizdle_verifier")
+        except AuthenticationError:
+            print("Authentication error; returning Error 401")
+            return web.Response(status=401)
+        
+        print("Read request authenticated.")
+        if payload.get("today") == "true":
+            today = str(date.today())
+            quizdle = get_quizdle_by_date(today)
+
+            return web.json_response(quizdle)
+    
+    @routes.post("/quizdle-builder/query")
+    async def query_handler(request: web.Request):
+        payload = await request.post()
+        try:
+            data = perform_query(**payload)
+        except Exception as e:
+            return web.json_response({"error": type(e).__name__ + ": " + str(e)})
+        return web.json_response({"data": data})
 
     # These need to be in order of depth, starting with deepest?
     routes.static("/quizdle-builder", "quizdle-builder")
